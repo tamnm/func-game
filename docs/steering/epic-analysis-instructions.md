@@ -142,15 +142,13 @@ Do not describe a `same-session` review as an independent subagent review. It is
 2. Load these analysis instructions and required context.
 3. Fetch the next Notion epic.
 4. Produce or update `analysis.md`.
-5. Run the review gate using the appropriate review mode:
-   - If the user explicitly requested subagents/delegation/independent subagent review, invoke a reviewer subagent.
-   - Otherwise, perform a same-session reviewer pass.
+5. Run the review gate using `subagent` mode.
 6. Save review as `review-1.md`.
 7. Fix findings in `analysis.md`.
-8. Run reviewer pass again using the selected/allowed review mode.
+8. Run reviewer pass again using `subagent` mode.
 9. Save review as `review-2.md`.
 10. Fix findings if any.
-11. Run reviewer pass a third time if needed.
+11. Run reviewer pass a third time (using `subagent` mode) if needed.
 12. Save review as `review-3.md`.
 13. Once approved, write `implementation-handoff.md`.
 14. Create or update durable deliverable docs required by the epic.
