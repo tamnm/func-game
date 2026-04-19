@@ -97,9 +97,9 @@ Every analysis must explicitly answer:
 - Does this include look, feel, audio, and effects where relevant?
 - Does this update Notion for backlog/status and repo docs for durable decisions?
 
-## When To Invoke Reviewer
+## Review Gate
 
-Invoke an independent reviewer for:
+Run a review gate for:
 
 - Every roadmap epic before implementation.
 - Any epic touching architecture, transport, session, lobby, chat, renderer, audio/effects, deployment, or release strategy.
@@ -107,19 +107,31 @@ Invoke an independent reviewer for:
 
 Small bugfix tasks do not require the full reviewer loop unless they change project direction.
 
+### Review Modes
+
+Use one of these modes and record it in the review metadata:
+
+- `same-session`: the same Codex session performs a reviewer pass using `docs/steering/analysis-reviewer-instructions.md`. Use this when the user has not explicitly requested subagents/delegation.
+- `subagent`: the main session invokes a reviewer subagent. Use this only when the user explicitly asks for subagents, delegation, parallel agent work, or independent subagent review.
+- `separate-session`: a different Codex session performs the review later.
+
+Do not describe a `same-session` review as an independent subagent review. It is still a required quality gate, but it is not independently executed.
+
 ## Expected Session Flow
 
 1. Start Codex session.
 2. Load these analysis instructions and required context.
 3. Fetch the next Notion epic.
 4. Produce or update `analysis.md`.
-5. Invoke independent analysis reviewer.
+5. Run the review gate using the appropriate review mode:
+   - If the user explicitly requested subagents/delegation/independent subagent review, invoke a reviewer subagent.
+   - Otherwise, perform a same-session reviewer pass.
 6. Save review as `review-1.md`.
 7. Fix findings in `analysis.md`.
-8. Invoke reviewer again.
+8. Run reviewer pass again using the selected/allowed review mode.
 9. Save review as `review-2.md`.
 10. Fix findings if any.
-11. Invoke reviewer a third time if needed.
+11. Run reviewer pass a third time if needed.
 12. Save review as `review-3.md`.
 13. Once approved, write `implementation-handoff.md`.
 14. Update Notion with the approved task breakdown and verification plan.

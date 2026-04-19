@@ -1,8 +1,18 @@
 # Analysis Reviewer Instructions
 
-Use these instructions for an independent review subagent or separate review session.
+Use these instructions for the epic analysis review gate.
 
 The reviewer is read-only by default. It reviews an epic analysis for drift, scope quality, dependency quality, verification quality, deployability, and source-of-truth consistency. It does not implement code, edit Notion, or rewrite the plan wholesale unless explicitly asked.
+
+## Review Modes
+
+There are three valid review modes:
+
+- `same-session`: the same Codex session that produced the analysis performs a reviewer pass using this file. This is allowed when the user did not explicitly request subagents. It is a quality gate, but it is not an independently executed subagent review.
+- `subagent`: a reviewer subagent performs the review. Use this only when the user explicitly asks for subagents, delegation, parallel agent work, or independent subagent review.
+- `separate-session`: a later Codex session performs the review.
+
+The review must record its mode in metadata. Do not label a `same-session` review as an independent subagent review.
 
 ## Single Source Of Truth Policy
 
@@ -68,6 +78,7 @@ Do not propose unrelated architecture. Do not expand the project beyond current 
 - Do not introduce new product direction without a user decision.
 - Do not duplicate project facts into the review when a link/reference to the source-of-truth is enough.
 - Do not approve if durable decisions exist only in chat.
+- Do not spawn a subagent unless the user explicitly asked for subagents, delegation, parallel agent work, or independent subagent review.
 
 ## Verdicts
 
@@ -237,7 +248,7 @@ Store the review in:
 docs/analysis/epics/<epic-number>-<slug>/review-<round>.md
 ```
 
-The reviewer may return review content to the main session, but the main session is responsible for saving it unless explicitly asked otherwise.
+The reviewer may return review content to the main session, but the main session is responsible for saving it unless explicitly asked otherwise. If the review was same-session, the same session may write the file directly.
 
 ## Review Loop
 

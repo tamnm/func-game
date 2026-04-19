@@ -41,7 +41,15 @@ The main analysis artifact for the epic. It should include:
 
 ### `review-<round>.md`
 
-Independent reviewer output for each review round.
+Reviewer output for each review round.
+
+Each review must record one review mode:
+
+- `same-session`: the same Codex session performed the reviewer pass.
+- `subagent`: a reviewer subagent performed the review after the user explicitly requested subagents/delegation.
+- `separate-session`: another Codex session performed the review.
+
+Only `subagent` and `separate-session` reviews should be described as independently executed. A `same-session` review is still a useful quality gate, but it is not an independent subagent review.
 
 Expected rounds:
 

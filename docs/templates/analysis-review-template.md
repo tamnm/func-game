@@ -5,6 +5,7 @@
 - Reviewed analysis:
 - Review date:
 - Reviewer:
+- Reviewer mode: same-session | subagent | separate-session
 - Verdict: Approved | Approved with changes | Needs rework
 
 ## Summary
