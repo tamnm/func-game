@@ -2,7 +2,14 @@
 
 Epic analysis outputs are stored in the repository so future sessions and agents can resume with full context.
 
-Notion remains the planning/task tracking system. Analysis artifacts in this repo are the implementation handoff and reasoning record.
+Notion remains the planning/task tracking system. Analysis artifacts in this repo are the implementation handoff and reasoning record. Official deliverables that should be read directly outside the analysis process belong in durable docs folders such as `docs/product/` or `docs/steering/`.
+
+## Documentation Roles
+
+- `docs/steering/`: durable agent/process/architecture steering.
+- `docs/product/`: durable product deliverables such as MVP definitions, user flows, UX direction, and out-of-scope decisions.
+- `docs/analysis/epics/`: per-epic reasoning, review rounds, and handoff trail.
+- Notion: planning, status, task tracking, and links to repo artifacts.
 
 ## Directory Layout
 
@@ -16,6 +23,7 @@ docs/analysis/epics/
     review-2.md
     review-3.md
     implementation-handoff.md
+    references.md
   02-deployable-app-shell-and-design-foundation/
     analysis.md
     ...
@@ -69,13 +77,25 @@ Final concise handoff for a future implementation session. It should be written 
 - Files/modules expected to be touched.
 - Verification commands/checks.
 - Known risks and non-goals.
+- Durable deliverables to read before implementation.
+
+### `references.md`
+
+Optional index of the durable deliverables and external planning links that an epic produced or depends on. Use it when the epic has official outputs outside the analysis directory, for example:
+
+- Product deliverables in `docs/product/`.
+- Steering updates in `docs/steering/`.
+- Notion project/epic/task links.
+- Follow-up epic artifact links.
 
 ## Storage Rules
 
 - Put durable analysis in repo files, not only in chat.
 - Put backlog/task status in Notion.
-- Put durable architecture decisions in steering docs.
+- Put durable product deliverables in `docs/product/`.
+- Put durable architecture/process decisions in `docs/steering/`.
 - If analysis changes architecture, update steering docs and mention that in Notion.
+- If analysis produces official product scope, user flow, UX direction, or out-of-scope decisions, update `docs/product/` and mention that in Notion.
 - If analysis creates implementation tasks, update Notion task breakdown after approval.
 
 ## Naming Rules

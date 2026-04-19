@@ -57,7 +57,25 @@ docs/analysis/epics/<epic-number>-<short-slug>/analysis.md
 
 Use `docs/templates/epic-analysis-template.md` as the structure.
 
-Do not store implementation-only details exclusively in chat. If a later session needs it, put it in the analysis artifact, Notion task, or steering docs.
+Do not store implementation-only details exclusively in chat. If a later session needs it, put it in the analysis artifact, Notion task, or durable repo docs.
+
+## Durable Deliverable Location
+
+The epic analysis directory is the review trail and handoff record. It should not be the only location for official deliverables that future humans or agents need to read directly.
+
+Use these locations:
+
+- `docs/product/`: product scope, MVP definitions, user flows, UX/audio/effects direction, out-of-scope lists, and other product-facing decisions.
+- `docs/steering/`: durable agent instructions, architecture decisions, implementation conventions, verification strategy, and process rules.
+- `docs/analysis/epics/<epic-number>-<slug>/`: analysis, review rounds, handoff, and references to durable deliverables.
+- Notion: planning/status/task tracking and links back to repo artifacts.
+
+When an epic produces durable deliverables:
+
+1. Create or update the durable deliverable file in the appropriate docs folder.
+2. Add a `Durable Deliverables` section to the epic analysis naming those files.
+3. Reference the durable deliverables from `implementation-handoff.md`.
+4. Update Notion with links to both the analysis artifacts and the durable deliverables.
 
 ## Analysis Workflow
 
@@ -68,9 +86,10 @@ Do not store implementation-only details exclusively in chat. If a later session
 5. Break the epic into implementation tasks small enough to verify independently.
 6. Define verification for each task and for the whole epic.
 7. Check for project drift.
-8. Identify Notion updates needed.
-9. Identify repo steering updates needed.
-10. Write an implementation handoff section.
+8. Identify durable deliverables that need to be created or updated.
+9. Identify Notion updates needed.
+10. Identify repo steering updates needed.
+11. Write an implementation handoff section.
 
 ## Scope Rules
 
@@ -134,6 +153,7 @@ Do not describe a `same-session` review as an independent subagent review. It is
 11. Run reviewer pass a third time if needed.
 12. Save review as `review-3.md`.
 13. Once approved, write `implementation-handoff.md`.
-14. Update Notion with the approved task breakdown and verification plan.
+14. Create or update durable deliverable docs required by the epic.
+15. Update Notion with the approved task breakdown, verification plan, analysis links, and durable deliverable links.
 
 Do not start implementation in the analysis session unless the user explicitly asks for it.

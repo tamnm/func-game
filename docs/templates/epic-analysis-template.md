@@ -46,6 +46,12 @@ Which concrete game or product slice requires this work?
 
 - 
 
+## Durable Deliverables
+
+List official deliverables created or updated outside this analysis directory. Use `None` if the epic only produces code/tests.
+
+- 
+
 ## Proposed Task Breakdown
 
 Each task should be incremental, isolated, verifiable, and deployable where applicable.
