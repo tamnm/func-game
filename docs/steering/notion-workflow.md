@@ -2,6 +2,18 @@
 
 Notion is the planning and tracking system. This repository is the durable technical steering system.
 
+## Required Capability
+
+Use the Notion plugin/app tools when available for:
+
+- Fetching the project page.
+- Finding epics/tasks.
+- Reading acceptance criteria.
+- Updating task status and approved task breakdowns.
+- Recording verification summaries after implementation.
+
+If Notion tools are unavailable, do not invent project/task state. Continue from repo docs only where possible, and report that Notion sync is blocked.
+
 ## Source Of Truth Split
 
 - Notion stores project, epics, tasks, status, acceptance criteria, and planning notes.
