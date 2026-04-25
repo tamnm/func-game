@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { mockChat, mockParticipants, screens } from "./app/mockData";
 import type { ScreenId } from "./app/types";
-import { BoardPreview } from "./design/components/BoardPreview";
 import { Button } from "./design/components/Button";
 import { ChatShell } from "./design/components/ChatShell";
 import { MuteControl } from "./design/components/MuteControl";
@@ -11,6 +10,9 @@ import { RoomCode } from "./design/components/RoomCode";
 import { StatusBanner } from "./design/components/StatusBanner";
 import { TextInput } from "./design/components/TextInput";
 import { useAudioController } from "./effects/audio/useAudioController";
+import { ticTacToeDefinition } from "./games/tic-tac-toe/definition";
+import { TicTacToeBoard } from "./games/tic-tac-toe/renderer/TicTacToeBoard";
+import type { TicTacToeState } from "./games/tic-tac-toe/rules";
 
 const roomCode = "F7KQ";
 
@@ -110,7 +112,7 @@ export function App() {
       {activeScreen === "lobby" ? (
         <LobbyScreen onStart={() => goTo("game")} />
       ) : null}
-      {activeScreen === "game" ? <GameScreen /> : null}
+      {activeScreen === "game" ? <GameScreen onCue={audio.playCue} /> : null}
     </main>
   );
 }
@@ -263,38 +265,112 @@ function LobbyScreen({ onStart }: LobbyScreenProps) {
   );
 }
 
-function GameScreen() {
+type GameScreenProps = {
+  onCue: ReturnType<typeof useAudioController>["playCue"];
+};
+
+function GameScreen({ onCue }: GameScreenProps) {
+  const [gameState, setGameState] = useState<TicTacToeState>(
+    ticTacToeDefinition.createInitialState,
+  );
+  const statusText = getGameStatusText(gameState);
+
+  function handleCellSelect(cellIndex: number) {
+    const nextState = ticTacToeDefinition.applyMove(gameState, {
+      cellIndex,
+      player: gameState.currentTurn,
+    });
+
+    setGameState(nextState);
+
+    if (nextState.invalidMove) {
+      onCue("invalid");
+    } else if (nextState.result.type === "playing") {
+      onCue("move");
+    } else {
+      onCue("result");
+    }
+  }
+
+  function resetGame() {
+    setGameState(ticTacToeDefinition.createInitialState());
+    onCue("start");
+  }
+
   return (
     <section className="game-layout">
       <Panel className="game-status-panel">
         <div className="game-status-grid">
           <PlayerBadge participant={mockParticipants[0]} />
-          <div className="turn-card fx-highlighted">
+          <div
+            className={`turn-card ${
+              gameState.result.type === "playing" ? "fx-highlighted" : "fx-notification"
+            }`}
+            aria-live="polite"
+          >
             <p className="eyebrow">Turn</p>
-            <strong>X to move</strong>
-            <small>Last move is highlighted.</small>
+            <strong>{statusText}</strong>
+            <small>
+              {gameState.invalidMove
+                ? getInvalidMoveText(gameState.invalidMove)
+                : "Last move and winning cells stay highlighted."}
+            </small>
           </div>
           <PlayerBadge participant={mockParticipants[1]} />
         </div>
       </Panel>
 
       <Panel className="board-panel">
-        <BoardPreview />
+        <TicTacToeBoard state={gameState} onCellSelect={handleCellSelect} />
         <div className="action-row center-actions">
-          <Button variant="secondary">Rematch</Button>
+          <Button onClick={resetGame} variant="secondary">
+            Rematch
+          </Button>
           <Button variant="ghost">Leave room</Button>
         </div>
       </Panel>
 
       <aside className="side-stack">
-        <StatusBanner tone="success">Board is ready.</StatusBanner>
-        <StatusBanner tone="danger">
-          Host disconnected banner style is ready.
+        <StatusBanner tone="success">Local Tic Tac Toe is playable.</StatusBanner>
+        <StatusBanner
+          tone={gameState.result.type === "playing" ? "warning" : "success"}
+        >
+          {gameState.result.type === "playing"
+            ? `${gameState.currentTurn} is choosing a square.`
+            : "Game complete. Start a rematch when ready."}
         </StatusBanner>
         <ChatShell messages={mockChat} />
       </aside>
     </section>
   );
+}
+
+function getGameStatusText(state: TicTacToeState) {
+  if (state.result.type === "win") {
+    return `${state.result.winner} wins`;
+  }
+
+  if (state.result.type === "draw") {
+    return "Draw game";
+  }
+
+  return `${state.currentTurn} to move`;
+}
+
+function getInvalidMoveText(invalidMove: TicTacToeState["invalidMove"]) {
+  if (invalidMove === "cell-occupied") {
+    return "That square is already taken.";
+  }
+
+  if (invalidMove === "wrong-turn") {
+    return "Wait for your turn.";
+  }
+
+  if (invalidMove === "game-finished") {
+    return "Start a rematch to play again.";
+  }
+
+  return "Choose a square on the board.";
 }
 
 function readScreenFromHash(): ScreenId {

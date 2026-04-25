@@ -73,7 +73,7 @@ For foundation, transport, game, UX/audio/effects, deployment, or release-harden
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **fun-game** (232 symbols, 230 relationships, 0 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **func-game** (407 symbols, 452 relationships, 3 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -96,10 +96,10 @@ This project is indexed by GitNexus as **fun-game** (232 symbols, 230 relationsh
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/fun-game/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/fun-game/clusters` | All functional areas |
-| `gitnexus://repo/fun-game/processes` | All execution flows |
-| `gitnexus://repo/fun-game/process/{name}` | Step-by-step execution trace |
+| `gitnexus://repo/func-game/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/func-game/clusters` | All functional areas |
+| `gitnexus://repo/func-game/processes` | All execution flows |
+| `gitnexus://repo/func-game/process/{name}` | Step-by-step execution trace |
 
 ## CLI
 
