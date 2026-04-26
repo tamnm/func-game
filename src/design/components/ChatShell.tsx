@@ -4,9 +4,10 @@ import { TextInput } from "./TextInput";
 
 type ChatShellProps = {
   messages: ChatMessage[];
+  onSend?: (body: string) => void;
 };
 
-export function ChatShell({ messages }: ChatShellProps) {
+export function ChatShell({ messages, onSend }: ChatShellProps) {
   return (
     <section className="chat-shell" aria-labelledby="chat-heading">
       <div className="section-heading">
@@ -35,14 +36,19 @@ export function ChatShell({ messages }: ChatShellProps) {
         className="chat-form"
         onSubmit={(event) => {
           event.preventDefault();
+          const formData = new FormData(event.currentTarget);
+          const body = String(formData.get("message") ?? "");
+          onSend?.(body);
+          event.currentTarget.reset();
         }}
       >
         <TextInput
-          ariaLabel="Mock chat message"
+          ariaLabel="Chat message"
           label="Message"
+          name="message"
           placeholder="Say hi"
         />
-        <Button variant="secondary">Send</Button>
+        <Button type="submit" variant="secondary">Send</Button>
       </form>
     </section>
   );

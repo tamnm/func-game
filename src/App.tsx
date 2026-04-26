@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { mockChat, mockParticipants, screens } from "./app/mockData";
+import { screens } from "./app/mockData";
 import type { ScreenId } from "./app/types";
 import { Button } from "./design/components/Button";
 import { ChatShell } from "./design/components/ChatShell";
@@ -10,15 +10,19 @@ import { RoomCode } from "./design/components/RoomCode";
 import { StatusBanner } from "./design/components/StatusBanner";
 import { TextInput } from "./design/components/TextInput";
 import { useAudioController } from "./effects/audio/useAudioController";
-import { ticTacToeDefinition } from "./games/tic-tac-toe/definition";
 import { TicTacToeBoard } from "./games/tic-tac-toe/renderer/TicTacToeBoard";
 import type { TicTacToeState } from "./games/tic-tac-toe/rules";
-
-const roomCode = "F7KQ";
+import { createLocalRoomController } from "./session/host-session";
+import { getParticipantByMark, type RoomState } from "./session/room-state";
 
 export function App() {
   const [activeScreen, setActiveScreen] = useState<ScreenId>(readScreenFromHash);
   const [displayName, setDisplayName] = useState("Tam");
+  const [joinName, setJoinName] = useState("Friend");
+  const [controller, setController] = useState(() =>
+    createLocalRoomController("Tam"),
+  );
+  const [roomState, setRoomState] = useState<RoomState>(() => controller.getState());
   const audio = useAudioController();
   const currentScreen = useMemo(
     () => screens.find((screen) => screen.id === activeScreen),
@@ -29,6 +33,22 @@ export function App() {
     window.location.hash = screen;
     setActiveScreen(screen);
     audio.playCue(screen === "game" ? "start" : "chat");
+  }
+
+  function dispatchRoom(action: Parameters<typeof controller.dispatch>[0]) {
+    setRoomState(controller.dispatch(action));
+  }
+
+  function createRoom() {
+    const nextController = createLocalRoomController(displayName || "Host");
+    setController(nextController);
+    setRoomState(nextController.getState());
+    goTo("create");
+  }
+
+  function joinRoom() {
+    setRoomState(controller.dispatch({ type: "join", name: joinName || "Friend" }));
+    goTo("lobby");
   }
 
   useEffect(() => {
@@ -52,7 +72,7 @@ export function App() {
           FG
         </button>
 
-        <nav aria-label="Mock screen navigation" className="screen-nav">
+        <nav aria-label="Screen navigation" className="screen-nav">
           {screens.map((screen) => (
             <button
               aria-current={activeScreen === screen.id ? "page" : undefined}
@@ -90,7 +110,7 @@ export function App() {
       {activeScreen === "home" ? (
         <HomeScreen
           displayName={displayName}
-          onCreate={() => goTo("create")}
+          onCreate={createRoom}
           onJoin={() => goTo("join")}
           onNameChange={setDisplayName}
         />
@@ -98,21 +118,61 @@ export function App() {
       {activeScreen === "create" ? (
         <CreateRoomScreen
           displayName={displayName}
+          room={roomState}
           onBack={() => goTo("home")}
           onContinue={() => goTo("lobby")}
         />
       ) : null}
       {activeScreen === "join" ? (
         <JoinRoomScreen
-          displayName={displayName}
+          displayName={joinName}
+          onNameChange={setJoinName}
           onBack={() => goTo("home")}
-          onContinue={() => goTo("lobby")}
+          onContinue={joinRoom}
+          roomCode={roomState.code}
         />
       ) : null}
       {activeScreen === "lobby" ? (
-        <LobbyScreen onStart={() => goTo("game")} />
+        <LobbyScreen
+          localParticipantId={roomState.hostId}
+          onChat={(participantId, body) =>
+            dispatchRoom({ type: "chat", participantId, body })
+          }
+          onRename={(participantId, name) =>
+            dispatchRoom({ type: "rename", participantId, name })
+          }
+          onStart={() => {
+            dispatchRoom({ type: "start", participantId: roomState.hostId });
+            goTo("game");
+          }}
+          room={roomState}
+        />
       ) : null}
-      {activeScreen === "game" ? <GameScreen onCue={audio.playCue} /> : null}
+      {activeScreen === "game" ? (
+        <GameScreen
+          onChat={(participantId, body) =>
+            dispatchRoom({ type: "chat", participantId, body })
+          }
+          onHostDisconnect={() => dispatchRoom({ type: "host-disconnect" })}
+          onMove={(participantId, cellIndex) => {
+            const next = controller.dispatch({ type: "move", participantId, cellIndex });
+            setRoomState(next);
+
+            if (next.game.invalidMove) {
+              audio.playCue("invalid");
+            } else if (next.game.result.type === "playing") {
+              audio.playCue("move");
+            } else {
+              audio.playCue("result");
+            }
+          }}
+          onRematch={() => {
+            dispatchRoom({ type: "rematch", participantId: roomState.hostId });
+            audio.playCue("start");
+          }}
+          room={roomState}
+        />
+      ) : null}
     </main>
   );
 }
@@ -168,7 +228,12 @@ type CreateJoinProps = {
   onContinue: () => void;
 };
 
-function CreateRoomScreen({ displayName, onBack, onContinue }: CreateJoinProps) {
+function CreateRoomScreen({
+  displayName,
+  onBack,
+  onContinue,
+  room,
+}: CreateJoinProps & { room: RoomState }) {
   return (
     <section className="screen-grid">
       <Panel className="primary-panel">
@@ -177,7 +242,7 @@ function CreateRoomScreen({ displayName, onBack, onContinue }: CreateJoinProps) 
         <p className="muted-copy">
           {displayName || "Player"} will host the table and share this code.
         </p>
-        <RoomCode code={roomCode} />
+        <RoomCode code={room.code} />
         <div className="action-row">
           <Button onClick={onContinue}>Open lobby</Button>
           <Button onClick={onBack} variant="ghost">
@@ -197,7 +262,16 @@ function CreateRoomScreen({ displayName, onBack, onContinue }: CreateJoinProps) 
   );
 }
 
-function JoinRoomScreen({ displayName, onBack, onContinue }: CreateJoinProps) {
+function JoinRoomScreen({
+  displayName,
+  onBack,
+  onContinue,
+  onNameChange,
+  roomCode,
+}: CreateJoinProps & {
+  onNameChange: (name: string) => void;
+  roomCode: string;
+}) {
   return (
     <section className="screen-grid">
       <Panel className="primary-panel">
@@ -206,6 +280,12 @@ function JoinRoomScreen({ displayName, onBack, onContinue }: CreateJoinProps) {
         <p className="muted-copy">
           {displayName || "Player"} can enter the code from the host.
         </p>
+        <TextInput
+          label="Display name"
+          onChange={(event) => onNameChange(event.target.value)}
+          placeholder="Your name"
+          value={displayName}
+        />
         <TextInput
           ariaLabel="Room code"
           defaultValue={roomCode}
@@ -233,10 +313,27 @@ function JoinRoomScreen({ displayName, onBack, onContinue }: CreateJoinProps) {
 }
 
 type LobbyScreenProps = {
+  localParticipantId: string;
+  onChat: (participantId: string, body: string) => void;
+  onRename: (participantId: string, name: string) => void;
   onStart: () => void;
+  room: RoomState;
 };
 
-function LobbyScreen({ onStart }: LobbyScreenProps) {
+function LobbyScreen({
+  localParticipantId,
+  onChat,
+  onRename,
+  onStart,
+  room,
+}: LobbyScreenProps) {
+  const localParticipant = room.participants.find(
+    (participant) => participant.id === localParticipantId,
+  );
+  const canStart =
+    room.participants.filter((participant) => participant.role !== "spectator")
+      .length >= 2;
+
   return (
     <section className="screen-grid lobby-layout">
       <Panel className="primary-panel lobby-panel">
@@ -245,63 +342,81 @@ function LobbyScreen({ onStart }: LobbyScreenProps) {
             <p className="eyebrow">Lobby</p>
             <h2>Waiting for players</h2>
           </div>
-          <RoomCode code={roomCode} />
+          <RoomCode code={room.code} />
         </div>
 
         <div className="participant-grid">
-          {mockParticipants.map((participant) => (
+          {room.participants.map((participant) => (
             <PlayerBadge key={participant.id} participant={participant} />
           ))}
         </div>
 
         <div className="lobby-controls">
-          <TextInput defaultValue="Tam" label="Rename in lobby" />
-          <Button onClick={onStart}>Start game</Button>
+          <TextInput
+            defaultValue={localParticipant?.name}
+            label="Rename in lobby"
+            onBlur={(event) => onRename(localParticipantId, event.target.value)}
+          />
+          <Button disabled={!canStart} onClick={onStart}>
+            Start game
+          </Button>
         </div>
       </Panel>
 
-      <ChatShell messages={mockChat} />
+      <Panel eyebrow="Spectators" title="Room capacity">
+        <div className="status-stack">
+          <StatusBanner>
+            {`${room.participants.length} of ${room.maxParticipants} participants seated.`}
+          </StatusBanner>
+          <StatusBanner>
+            Extra guests join as spectators after the player slots are full.
+          </StatusBanner>
+        </div>
+      </Panel>
+
+      <ChatShell
+        messages={room.chat}
+        onSend={(body) => onChat(localParticipantId, body)}
+      />
     </section>
   );
 }
 
 type GameScreenProps = {
-  onCue: ReturnType<typeof useAudioController>["playCue"];
+  onChat: (participantId: string, body: string) => void;
+  onHostDisconnect: () => void;
+  onMove: (participantId: string, cellIndex: number) => void;
+  onRematch: () => void;
+  room: RoomState;
 };
 
-function GameScreen({ onCue }: GameScreenProps) {
-  const [gameState, setGameState] = useState<TicTacToeState>(
-    ticTacToeDefinition.createInitialState,
-  );
+function GameScreen({
+  onChat,
+  onHostDisconnect,
+  onMove,
+  onRematch,
+  room,
+}: GameScreenProps) {
+  const gameState = room.game;
   const statusText = getGameStatusText(gameState);
+  const currentParticipant = getParticipantByMark(
+    room.participants,
+    gameState.currentTurn,
+  );
+  const xParticipant = getParticipantByMark(room.participants, "X");
+  const oParticipant = getParticipantByMark(room.participants, "O");
 
   function handleCellSelect(cellIndex: number) {
-    const nextState = ticTacToeDefinition.applyMove(gameState, {
-      cellIndex,
-      player: gameState.currentTurn,
-    });
-
-    setGameState(nextState);
-
-    if (nextState.invalidMove) {
-      onCue("invalid");
-    } else if (nextState.result.type === "playing") {
-      onCue("move");
-    } else {
-      onCue("result");
+    if (currentParticipant) {
+      onMove(currentParticipant.id, cellIndex);
     }
-  }
-
-  function resetGame() {
-    setGameState(ticTacToeDefinition.createInitialState());
-    onCue("start");
   }
 
   return (
     <section className="game-layout">
       <Panel className="game-status-panel">
         <div className="game-status-grid">
-          <PlayerBadge participant={mockParticipants[0]} />
+          {xParticipant ? <PlayerBadge participant={xParticipant} /> : null}
           <div
             className={`turn-card ${
               gameState.result.type === "playing" ? "fx-highlighted" : "fx-notification"
@@ -316,22 +431,28 @@ function GameScreen({ onCue }: GameScreenProps) {
                 : "Last move and winning cells stay highlighted."}
             </small>
           </div>
-          <PlayerBadge participant={mockParticipants[1]} />
+          {oParticipant ? <PlayerBadge participant={oParticipant} /> : null}
         </div>
       </Panel>
 
       <Panel className="board-panel">
         <TicTacToeBoard state={gameState} onCellSelect={handleCellSelect} />
         <div className="action-row center-actions">
-          <Button onClick={resetGame} variant="secondary">
+          <Button onClick={onRematch} variant="secondary">
             Rematch
           </Button>
-          <Button variant="ghost">Leave room</Button>
+          <Button onClick={onHostDisconnect} variant="ghost">
+            End room
+          </Button>
         </div>
       </Panel>
 
       <aside className="side-stack">
-        <StatusBanner tone="success">Local Tic Tac Toe is playable.</StatusBanner>
+        {room.phase === "host-disconnected" ? (
+          <StatusBanner tone="danger">Host disconnected. Room ended.</StatusBanner>
+        ) : (
+          <StatusBanner tone="success">Host-authoritative local session active.</StatusBanner>
+        )}
         <StatusBanner
           tone={gameState.result.type === "playing" ? "warning" : "success"}
         >
@@ -339,7 +460,10 @@ function GameScreen({ onCue }: GameScreenProps) {
             ? `${gameState.currentTurn} is choosing a square.`
             : "Game complete. Start a rematch when ready."}
         </StatusBanner>
-        <ChatShell messages={mockChat} />
+        <ChatShell
+          messages={room.chat}
+          onSend={(body) => onChat(room.hostId, body)}
+        />
       </aside>
     </section>
   );

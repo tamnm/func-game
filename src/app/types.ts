@@ -7,6 +7,7 @@ export type Participant = {
   name: string;
   role: ParticipantRole;
   connected: boolean;
+  slotIndex?: number;
   slotLabel?: string;
 };
 
